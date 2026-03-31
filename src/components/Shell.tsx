@@ -4,6 +4,7 @@ import type { EdgeSide } from '../types/settings'
 type ShellProps = PropsWithChildren<{
   edgeSide: EdgeSide
   isOpen: boolean
+  isExpanded: boolean
   isPinned: boolean
   sidebarWidth: number
   onPointerEnter: () => void
@@ -14,6 +15,7 @@ type ShellProps = PropsWithChildren<{
 export function Shell({
   edgeSide,
   isOpen,
+  isExpanded,
   isPinned,
   sidebarWidth,
   onPointerEnter,
@@ -82,25 +84,21 @@ export function Shell({
       className="app-shell"
       data-edge={edgeSide}
       data-open={isOpen}
+      data-expanded={isExpanded}
       data-pinned={isPinned}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
+      style={{ ['--sidebar-width' as string]: `${sidebarWidth}px` }}
     >
       <div className="edge-handle" aria-hidden="true">
         <div className="edge-handle__bar" />
       </div>
-      {isOpen ? (
-        <div className="panel-frame">
-          <div
-            className="resize-handle"
-            onPointerDown={startResize}
-            aria-hidden="true"
-          >
-            <div className="resize-handle__grip" />
-          </div>
-          <div className="sidebar-surface">{children}</div>
+      <div className="panel-frame">
+        <div className="resize-handle" onPointerDown={startResize} aria-hidden="true">
+          <div className="resize-handle__grip" />
         </div>
-      ) : null}
+        <div className="sidebar-surface">{children}</div>
+      </div>
     </main>
   )
 }

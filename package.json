@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "desktop": "env PATH=\"$HOME/.cargo/bin:$PATH\" sh -c 'kill $(lsof -tiTCP:1420 -sTCP:LISTEN) 2>/dev/null || true; npm run tauri:dev'",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build"
   },

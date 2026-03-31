@@ -64,6 +64,7 @@ export function App() {
     <Shell
       edgeSide={settings.edgeSide}
       isOpen={sidebar.isOpen}
+      isExpanded={sidebar.isExpanded}
       isPinned={settings.pinOpen}
       sidebarWidth={settings.sidebarWidth}
       onPointerEnter={sidebar.scheduleOpen}
