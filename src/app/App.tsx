@@ -6,9 +6,7 @@ import { PremiumPanelsView } from '../components/PremiumPanelsView'
 import { SettingsPanel } from '../components/SettingsPanel'
 import { Shell } from '../components/Shell'
 import type { NoteItem } from '../features/notes/types'
-import { useAuthSession } from '../hooks/useAuthSession'
 import { useClipboardHistory } from '../hooks/useClipboardHistory'
-import { useCloudSync } from '../hooks/useCloudSync'
 import { useNotesStore } from '../hooks/useNotesStore'
 import { useSettingsStore } from '../hooks/useSettingsStore'
 import { useSidebarController } from '../hooks/useSidebarController'
@@ -26,8 +24,7 @@ export function App() {
   const deferredQuery = useDeferredValue(searchQuery)
   const [activeMode, setActiveMode] = useState<SidebarMode>('notes')
   const platform = getPlatformFlavor()
-  const { notes, isReady: notesReady, setNotes, updateNotes } = useNotesStore()
-  const auth = useAuthSession()
+  const { notes, isReady: notesReady, updateNotes } = useNotesStore()
 
   useEffect(() => {
     applyPlatformTheme(platform, settings.themeTreatment)
@@ -39,23 +36,9 @@ export function App() {
     copyItem,
     deleteItem,
     clearAll,
-    replaceAll: replaceClipboardItems,
   } = useClipboardHistory(settings.clipboardHistoryLimit)
 
   const sidebar = useSidebarController(settings, updatePartialSettings, settingsReady)
-
-  const sync = useCloudSync({
-    user: auth.user,
-    settingsReady,
-    notesReady,
-    clipboardReady: historyReady,
-    settings,
-    notes,
-    clipboardItems: items,
-    applySettings: updateSettings,
-    applyNotes: setNotes,
-    applyClipboardItems: replaceClipboardItems,
-  })
 
   const query = deferredQuery.trim().toLowerCase()
   const filteredItems = !query
@@ -102,14 +85,6 @@ export function App() {
             settings={settings}
             onChange={updateSettings}
             onClose={sidebar.closeSettings}
-            user={auth.user}
-            authReady={auth.isReady}
-            authAvailable={auth.isAvailable}
-            authStatus={auth.status}
-            syncStatus={sync.status}
-            syncMessage={sync.message}
-            onSignIn={() => void auth.signIn()}
-            onSignOut={() => void auth.signOut()}
           />
         ) : activeMode === 'notes' ? (
           <NotesWorkspace

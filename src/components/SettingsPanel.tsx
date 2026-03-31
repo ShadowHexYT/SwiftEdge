@@ -1,36 +1,20 @@
+import { memo } from 'react'
 import type { AppSettings, EdgeSide, ThemeTreatment } from '../types/settings'
-import type { AuthStatus, AuthUser, SyncStatus } from '../features/auth/types'
 import { IconChevronLeft } from './Icons'
 
 type SettingsPanelProps = {
   settings: AppSettings
   onChange: (nextSettings: AppSettings) => void
   onClose: () => void
-  user: AuthUser | null
-  authReady: boolean
-  authAvailable: boolean
-  authStatus: AuthStatus
-  syncStatus: SyncStatus
-  syncMessage: string
-  onSignIn: () => void
-  onSignOut: () => void
 }
 
 const edgeOptions: EdgeSide[] = ['left', 'right']
 const themeOptions: ThemeTreatment[] = ['system', 'windows', 'macos']
 
-export function SettingsPanel({
+export const SettingsPanel = memo(function SettingsPanel({
   settings,
   onChange,
   onClose,
-  user,
-  authReady,
-  authAvailable,
-  authStatus,
-  syncStatus,
-  syncMessage,
-  onSignIn,
-  onSignOut,
 }: SettingsPanelProps) {
   const isMac = document.documentElement.dataset.platform === 'macos'
   const shortcutLabel = isMac ? '\u2318\u21E7Space' : 'Ctrl+Shift+Space'
@@ -195,63 +179,6 @@ export function SettingsPanel({
           <div className="setting-row__value">{shortcutLabel}</div>
         </div>
       </div>
-
-      <div className="settings-group">
-        <div className="settings-group__title">Account & Sync</div>
-        <div className="account-card">
-          <div className="account-card__avatar">
-            {user?.photoURL ? (
-              <img src={user.photoURL} alt="" />
-            ) : (
-              <span>{user?.displayName?.[0]?.toUpperCase() ?? 'G'}</span>
-            )}
-          </div>
-          <div className="account-card__info">
-            {user ? (
-              <>
-                <div className="account-card__name">
-                  {user.displayName ?? 'Signed in'}
-                </div>
-                <div className="account-card__detail">{user.email}</div>
-              </>
-            ) : (
-              <>
-                <div className="account-card__name">Cloud Sync</div>
-                <div className="account-card__detail">
-                  Sign in with Google to sync across devices
-                </div>
-              </>
-            )}
-          </div>
-          <div className="sync-badge" data-status={syncStatus}>
-            {authAvailable ? syncMessage : 'No config'}
-          </div>
-        </div>
-        {authAvailable ? (
-          <div className="setting-row" style={{ justifyContent: 'center' }}>
-            {user ? (
-              <button
-                type="button"
-                className="btn btn--ghost"
-                onClick={onSignOut}
-              >
-                Sign out
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="btn btn--filled"
-                onClick={onSignIn}
-                disabled={!authReady || authStatus === 'signing-in'}
-              >
-                {authStatus === 'signing-in'
-                  ? 'Connecting\u2026'
-                  : 'Sign in with Google'}
-              </button>
-            )}
-          </div>
-        ) : null}
-      </div>
     </section>
   )
-}
+})

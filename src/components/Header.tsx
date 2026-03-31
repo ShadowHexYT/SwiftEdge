@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { SidebarMode } from '../types/settings'
 import {
   IconClipboard,
@@ -26,7 +27,7 @@ const modes: Array<{
   { id: 'panels', label: 'Web', icon: IconGlobe },
 ]
 
-export function Header({
+export const Header = memo(function Header({
   activeMode,
   onModeChange,
   onOpenSettings,
@@ -87,4 +88,4 @@ export function Header({
       </div>
     </header>
   )
-}
+})

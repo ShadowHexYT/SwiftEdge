@@ -150,6 +150,7 @@ button {
   position: relative;
   width: 100%;
   height: 100%;
+  contain: layout paint size;
 }
 
 /* ===== Edge Handle ===== */
@@ -247,6 +248,8 @@ button {
   border: 0.5px solid var(--surface-border-strong);
   box-shadow: var(--shadow-panel), var(--shadow-inset);
   overflow: hidden;
+  contain: layout paint style;
+  will-change: transform, opacity;
 }
 
 .app-shell[data-edge="right"] .sidebar-surface {
@@ -492,6 +495,7 @@ button {
   flex-direction: column;
   gap: 6px;
   padding-right: 2px;
+  overscroll-behavior: contain;
 }
 
 .clip-card {
@@ -617,6 +621,7 @@ button {
   flex-direction: column;
   gap: 2px;
   padding-right: 2px;
+  overscroll-behavior: contain;
 }
 
 .note-card {
@@ -711,6 +716,7 @@ button {
   font-size: 13px;
   line-height: 1.6;
   color: var(--text-primary);
+  overscroll-behavior: contain;
 }
 
 .note-editor__title::placeholder,

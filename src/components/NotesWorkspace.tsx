@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useState } from 'react'
+import { memo, useDeferredValue, useEffect, useRef, useState } from 'react'
 import type { NoteItem } from '../features/notes/types'
 import { IconPlus, IconSearch, IconTrash } from './Icons'
 
@@ -10,16 +10,18 @@ type NotesWorkspaceProps = {
   onUpdate: (id: string, patch: Partial<Pick<NoteItem, 'title' | 'body'>>) => void
 }
 
+const noteTimeFormatter = new Intl.DateTimeFormat([], {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
 function formatUpdatedAt(timestamp: number) {
-  return new Intl.DateTimeFormat([], {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(timestamp))
+  return noteTimeFormatter.format(new Date(timestamp))
 }
 
-export function NotesWorkspace({
+export const NotesWorkspace = memo(function NotesWorkspace({
   notes,
   isReady,
   onCreate,
@@ -28,7 +30,14 @@ export function NotesWorkspace({
 }: NotesWorkspaceProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [searchValue, setSearchValue] = useState('')
+  const [draftTitle, setDraftTitle] = useState('')
+  const [draftBody, setDraftBody] = useState('')
   const deferredQuery = useDeferredValue(searchValue)
+  const onUpdateRef = useRef(onUpdate)
+
+  useEffect(() => {
+    onUpdateRef.current = onUpdate
+  }, [onUpdate])
 
   useEffect(() => {
     if (notes.length === 0) {
@@ -52,6 +61,35 @@ export function NotesWorkspace({
     filteredNotes.find((n) => n.id === selectedId) ??
     notes.find((n) => n.id === selectedId) ??
     null
+
+  useEffect(() => {
+    setDraftTitle(selectedNote?.title ?? '')
+    setDraftBody(selectedNote?.body ?? '')
+  }, [selectedNote?.id])
+
+  useEffect(() => {
+    if (!selectedNote) {
+      return
+    }
+
+    if (
+      draftTitle === selectedNote.title &&
+      draftBody === selectedNote.body
+    ) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      onUpdateRef.current(selectedNote.id, {
+        title: draftTitle,
+        body: draftBody,
+      })
+    }, 120)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [draftBody, draftTitle, selectedNote])
 
   return (
     <section className="section-shell">
@@ -128,18 +166,14 @@ export function NotesWorkspace({
               <input
                 type="text"
                 className="note-editor__title"
-                value={selectedNote.title}
-                onChange={(e) =>
-                  onUpdate(selectedNote.id, { title: e.target.value })
-                }
+                value={draftTitle}
+                onChange={(e) => setDraftTitle(e.target.value)}
                 placeholder="Untitled note"
               />
               <textarea
                 className="note-editor__body"
-                value={selectedNote.body}
-                onChange={(e) =>
-                  onUpdate(selectedNote.id, { body: e.target.value })
-                }
+                value={draftBody}
+                onChange={(e) => setDraftBody(e.target.value)}
                 placeholder="Start writing…"
               />
             </>
@@ -153,4 +187,4 @@ export function NotesWorkspace({
       </div>
     </section>
   )
-}
+})

@@ -8,6 +8,8 @@ const BROWSER_CLIPBOARD_EVENT = 'swiftedge:clipboard-updated'
 let browserClipboardLimit = 80
 let browserMonitorStarted = false
 let lastBrowserFingerprint: string | null = null
+let coreModulePromise: Promise<typeof import('@tauri-apps/api/core')> | null = null
+let eventModulePromise: Promise<typeof import('@tauri-apps/api/event')> | null = null
 
 function readBrowserClipboardHistory() {
   const raw = window.localStorage.getItem(BROWSER_CLIPBOARD_KEY)
@@ -135,7 +137,11 @@ function startBrowserClipboardMonitor() {
 }
 
 async function tauriInvoke<T>(command: string, payload?: Record<string, unknown>) {
-  const { invoke } = await import('@tauri-apps/api/core')
+  if (!coreModulePromise) {
+    coreModulePromise = import('@tauri-apps/api/core')
+  }
+
+  const { invoke } = await coreModulePromise
   return invoke<T>(command, payload)
 }
 
@@ -143,7 +149,11 @@ export async function subscribeClipboardUpdates(
   onItems: (items: ClipboardItem[]) => void,
 ) {
   if (isTauriRuntime()) {
-    const { listen } = await import('@tauri-apps/api/event')
+    if (!eventModulePromise) {
+      eventModulePromise = import('@tauri-apps/api/event')
+    }
+
+    const { listen } = await eventModulePromise
     return listen<{ items: ClipboardItem[] }>('swiftedge://clipboard-updated', (event) => {
       onItems(event.payload.items)
     })

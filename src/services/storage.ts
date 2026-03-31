@@ -1,14 +1,34 @@
 import { isTauriRuntime } from './runtime'
 
+type TauriStoreModule = typeof import('@tauri-apps/plugin-store')
+type TauriLazyStore = InstanceType<TauriStoreModule['LazyStore']>
+
+let pluginStorePromise: Promise<TauriStoreModule> | null = null
+const storeCache = new Map<string, TauriLazyStore>()
+
+async function getStore(path: string) {
+  if (!pluginStorePromise) {
+    pluginStorePromise = import('@tauri-apps/plugin-store')
+  }
+
+  const module = await pluginStorePromise
+  const cachedStore = storeCache.get(path)
+  if (cachedStore) {
+    return cachedStore
+  }
+
+  const store = new module.LazyStore(path)
+  storeCache.set(path, store)
+  return store
+}
+
 async function readFromTauriStore<T>(path: string, key: string) {
-  const { LazyStore } = await import('@tauri-apps/plugin-store')
-  const store = new LazyStore(path)
+  const store = await getStore(path)
   return store.get<T>(key)
 }
 
 async function writeToTauriStore<T>(path: string, key: string, value: T) {
-  const { LazyStore } = await import('@tauri-apps/plugin-store')
-  const store = new LazyStore(path)
+  const store = await getStore(path)
   await store.set(key, value)
 }
 

@@ -34,7 +34,13 @@ export function useSettingsStore() {
       return
     }
 
-    void writeStoredValue('settings.json', 'app-settings', settings)
+    const timeoutId = window.setTimeout(() => {
+      void writeStoredValue('settings.json', 'app-settings', settings)
+    }, 120)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
   }, [isReady, settings])
 
   return {

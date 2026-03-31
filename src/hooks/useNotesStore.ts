@@ -31,7 +31,13 @@ export function useNotesStore() {
       return
     }
 
-    void writeStoredValue('notes.json', 'notes', notes)
+    const timeoutId = window.setTimeout(() => {
+      void writeStoredValue('notes.json', 'notes', notes)
+    }, 220)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
   }, [isReady, notes])
 
   return {

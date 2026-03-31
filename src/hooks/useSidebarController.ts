@@ -12,6 +12,7 @@ export function useSidebarController(
   const [settingsOpen, setSettingsOpen] = useState(false)
   const openTimer = useRef<number | null>(null)
   const closeTimer = useRef<number | null>(null)
+  const syncedWindowState = useRef('')
 
   const clearTimers = useEffectEvent(() => {
     if (openTimer.current) {
@@ -60,11 +61,28 @@ export function useSidebarController(
       return
     }
 
-    void syncSidebarWindow({
+    const nextWindowState = JSON.stringify({
       edgeSide: settings.edgeSide,
       sidebarWidth: settings.sidebarWidth,
       isOpen: settings.pinOpen || isOpen,
     })
+
+    if (syncedWindowState.current === nextWindowState) {
+      return
+    }
+
+    syncedWindowState.current = nextWindowState
+    const timeoutId = window.setTimeout(() => {
+      void syncSidebarWindow(JSON.parse(nextWindowState) as {
+        edgeSide: AppSettings['edgeSide']
+        sidebarWidth: number
+        isOpen: boolean
+      })
+    }, 16)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
   }, [isOpen, isReady, settings.edgeSide, settings.pinOpen, settings.sidebarWidth])
 
   useEffect(() => {

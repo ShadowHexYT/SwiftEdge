@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import type { ClipboardItem } from '../features/clipboard/types'
 import { IconSearch, IconTrash } from './Icons'
 
@@ -12,16 +13,18 @@ type ClipboardListProps = {
   onClearAll: () => Promise<void>
 }
 
+const clipboardTimeFormatter = new Intl.DateTimeFormat([], {
+  hour: 'numeric',
+  minute: '2-digit',
+  month: 'short',
+  day: 'numeric',
+})
+
 function formatTimestamp(createdAt: number) {
-  return new Intl.DateTimeFormat([], {
-    hour: 'numeric',
-    minute: '2-digit',
-    month: 'short',
-    day: 'numeric',
-  }).format(new Date(createdAt))
+  return clipboardTimeFormatter.format(new Date(createdAt))
 }
 
-export function ClipboardList({
+export const ClipboardList = memo(function ClipboardList({
   items,
   allItemsCount,
   isReady,
@@ -132,4 +135,4 @@ export function ClipboardList({
       </div>
     </section>
   )
-}
+})

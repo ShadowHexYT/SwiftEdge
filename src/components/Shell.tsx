@@ -1,4 +1,4 @@
-import { useCallback, type PropsWithChildren } from 'react'
+import { useCallback, useEffect, useRef, type PropsWithChildren } from 'react'
 import type { EdgeSide } from '../types/settings'
 
 type ShellProps = PropsWithChildren<{
@@ -21,6 +21,21 @@ export function Shell({
   onWidthChange,
   children,
 }: ShellProps) {
+  const frameRef = useRef<number | null>(null)
+  const pendingWidthRef = useRef(sidebarWidth)
+
+  useEffect(() => {
+    pendingWidthRef.current = sidebarWidth
+  }, [sidebarWidth])
+
+  useEffect(() => {
+    return () => {
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current)
+      }
+    }
+  }, [])
+
   const startResize = useCallback(
     (e: React.PointerEvent) => {
       e.preventDefault()
@@ -30,12 +45,24 @@ export function Shell({
       const onMove = (ev: PointerEvent) => {
         const delta =
           edgeSide === 'right' ? startX - ev.clientX : ev.clientX - startX
-        onWidthChange(
-          Math.round(Math.max(280, Math.min(640, startWidth + delta))),
+        pendingWidthRef.current = Math.round(
+          Math.max(280, Math.min(640, startWidth + delta)),
         )
+
+        if (frameRef.current === null) {
+          frameRef.current = window.requestAnimationFrame(() => {
+            frameRef.current = null
+            onWidthChange(pendingWidthRef.current)
+          })
+        }
       }
 
       const onUp = () => {
+        if (frameRef.current !== null) {
+          window.cancelAnimationFrame(frameRef.current)
+          frameRef.current = null
+        }
+        onWidthChange(pendingWidthRef.current)
         document.removeEventListener('pointermove', onMove)
         document.removeEventListener('pointerup', onUp)
         document.body.style.cursor = ''
