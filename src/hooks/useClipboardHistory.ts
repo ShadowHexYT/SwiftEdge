@@ -1,5 +1,4 @@
 import { useEffect, useEffectEvent, useState } from 'react'
-import { listen } from '@tauri-apps/api/event'
 import {
   clearClipboardHistory,
   copyClipboardItem,
@@ -7,12 +6,9 @@ import {
   getClipboardHistory,
   replaceClipboardHistory,
   setClipboardHistoryLimit,
+  subscribeClipboardUpdates,
 } from '../services/desktop'
 import type { ClipboardItem } from '../features/clipboard/types'
-
-type ClipboardUpdatedPayload = {
-  items: ClipboardItem[]
-}
 
 export function useClipboardHistory(historyLimit: number) {
   const [items, setItems] = useState<ClipboardItem[]>([])
@@ -30,8 +26,8 @@ export function useClipboardHistory(historyLimit: number) {
       const initialItems = await getClipboardHistory()
       applyItems(initialItems)
 
-      unlisten = await listen<ClipboardUpdatedPayload>('swiftedge://clipboard-updated', (event) => {
-        applyItems(event.payload.items)
+      unlisten = await subscribeClipboardUpdates((nextItems) => {
+        applyItems(nextItems)
       })
     }
 

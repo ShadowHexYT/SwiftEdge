@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
-import { LazyStore } from '@tauri-apps/plugin-store'
+import { readStoredValue, writeStoredValue } from '../services/storage'
 import type { AppSettings } from '../types/settings'
 import { defaultSettings } from '../types/settings'
-
-const settingsStore = new LazyStore('settings.json')
 
 export function useSettingsStore() {
   const [settings, setSettings] = useState<AppSettings>(defaultSettings)
@@ -13,7 +11,7 @@ export function useSettingsStore() {
     let cancelled = false
 
     async function loadSettings() {
-      const stored = await settingsStore.get<AppSettings>('app-settings')
+      const stored = await readStoredValue<AppSettings>('settings.json', 'app-settings')
       if (cancelled) {
         return
       }
@@ -36,7 +34,7 @@ export function useSettingsStore() {
       return
     }
 
-    void settingsStore.set('app-settings', settings)
+    void writeStoredValue('settings.json', 'app-settings', settings)
   }, [isReady, settings])
 
   return {

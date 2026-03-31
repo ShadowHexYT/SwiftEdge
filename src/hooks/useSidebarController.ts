@@ -1,10 +1,7 @@
 import { startTransition, useEffect, useEffectEvent, useRef, useState } from 'react'
-import { disable as disableAutostart, enable as enableAutostart, isEnabled as isAutostartEnabled } from '@tauri-apps/plugin-autostart'
-import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut'
+import { registerSidebarShortcut, syncLaunchOnStartup } from '../services/desktopControls'
 import { syncSidebarWindow } from '../services/desktop'
 import type { AppSettings } from '../types/settings'
-
-const TOGGLE_SHORTCUT = 'CommandOrControl+Shift+Space'
 
 export function useSidebarController(
   settings: AppSettings,
@@ -85,29 +82,14 @@ export function useSidebarController(
       return
     }
 
-    async function syncAutostartPreference() {
-      const enabled = await isAutostartEnabled()
-      if (settings.launchOnStartup && !enabled) {
-        await enableAutostart()
-      }
-      if (!settings.launchOnStartup && enabled) {
-        await disableAutostart()
-      }
-    }
-
-    void syncAutostartPreference()
+    void syncLaunchOnStartup(settings.launchOnStartup)
   }, [isReady, settings.launchOnStartup])
 
   useEffect(() => {
-    let disposed = false
+    let cleanup: () => void = () => {}
 
     async function registerShortcut() {
-      await unregisterAll()
-      await register(TOGGLE_SHORTCUT, (event) => {
-        if (event.state !== 'Pressed' || disposed) {
-          return
-        }
-
+      cleanup = await registerSidebarShortcut(() => {
         startTransition(() => {
           setSettingsOpen(false)
           setIsOpen((current) => !current)
@@ -120,8 +102,7 @@ export function useSidebarController(
     }
 
     return () => {
-      disposed = true
-      void unregisterAll()
+      cleanup()
     }
   }, [isReady])
 

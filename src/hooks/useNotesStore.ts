@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
-import { LazyStore } from '@tauri-apps/plugin-store'
 import type { NoteItem } from '../features/notes/types'
-
-const notesStore = new LazyStore('notes.json')
+import { readStoredValue, writeStoredValue } from '../services/storage'
 
 export function useNotesStore() {
   const [notes, setNotes] = useState<NoteItem[]>([])
@@ -12,7 +10,7 @@ export function useNotesStore() {
     let cancelled = false
 
     async function loadNotes() {
-      const stored = (await notesStore.get<NoteItem[]>('notes')) ?? []
+      const stored = (await readStoredValue<NoteItem[]>('notes.json', 'notes')) ?? []
       if (cancelled) {
         return
       }
@@ -33,7 +31,7 @@ export function useNotesStore() {
       return
     }
 
-    void notesStore.set('notes', notes)
+    void writeStoredValue('notes.json', 'notes', notes)
   }, [isReady, notes])
 
   return {
