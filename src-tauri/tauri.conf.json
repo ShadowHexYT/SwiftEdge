@@ -10,11 +10,12 @@
     "beforeBuildCommand": "npm run build"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "SwiftEdge",
         "label": "main",
-        "width": 14,
+        "width": 8,
         "height": 860,
         "resizable": false,
         "fullscreen": false,

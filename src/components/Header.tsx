@@ -1,4 +1,11 @@
 import type { SidebarMode } from '../types/settings'
+import {
+  IconClipboard,
+  IconGlobe,
+  IconNotes,
+  IconPin,
+  IconSettings,
+} from './Icons'
 
 type HeaderProps = {
   activeMode: SidebarMode
@@ -9,10 +16,14 @@ type HeaderProps = {
   isPremiumUnlocked: boolean
 }
 
-const modes: Array<{ id: SidebarMode; label: string }> = [
-  { id: 'notes', label: 'Notes' },
-  { id: 'clipboard', label: 'Clipboard' },
-  { id: 'panels', label: 'Web Panels' },
+const modes: Array<{
+  id: SidebarMode
+  label: string
+  icon: React.ComponentType<{ size?: number }>
+}> = [
+  { id: 'notes', label: 'Notes', icon: IconNotes },
+  { id: 'clipboard', label: 'Clipboard', icon: IconClipboard },
+  { id: 'panels', label: 'Web', icon: IconGlobe },
 ]
 
 export function Header({
@@ -25,13 +36,13 @@ export function Header({
 }: HeaderProps) {
   return (
     <header className="sidebar-header">
-      <div className="sidebar-title">
-        <div className="sidebar-title__eyebrow">Edge Utility</div>
-        <div className="sidebar-title__name">SwiftEdge</div>
+      <div className="header-brand">
+        <div className="header-brand__mark">S</div>
       </div>
 
-      <div className="mode-toggle" role="tablist" aria-label="Sidebar mode">
+      <nav className="mode-tabs" role="tablist" aria-label="Sidebar mode">
         {modes.map((mode) => {
+          const Icon = mode.icon
           const isLocked = mode.id === 'panels' && !isPremiumUnlocked
           const isActive = activeMode === mode.id
 
@@ -41,35 +52,37 @@ export function Header({
               type="button"
               role="tab"
               aria-selected={isActive}
-              className="mode-toggle__button"
+              className="mode-tab"
               data-active={isActive}
               onClick={() => onModeChange(mode.id)}
             >
+              <Icon size={15} />
               <span>{mode.label}</span>
-              {isLocked ? <span className="badge-chip">Premium</span> : null}
+              {isLocked ? <span className="mode-tab__badge">Pro</span> : null}
             </button>
           )
         })}
-      </div>
+      </nav>
 
       <div className="header-actions">
         <button
           type="button"
-          className="icon-button"
+          className="icon-btn"
+          data-active={isPinned}
           onClick={onTogglePin}
           aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar'}
           title={isPinned ? 'Unpin sidebar' : 'Pin sidebar'}
         >
-          {isPinned ? 'Unpin' : 'Pin'}
+          <IconPin size={15} />
         </button>
         <button
           type="button"
-          className="icon-button"
+          className="icon-btn"
           onClick={onOpenSettings}
-          aria-label="Open settings"
-          title="Open settings"
+          aria-label="Settings"
+          title="Settings"
         >
-          Settings
+          <IconSettings size={15} />
         </button>
       </div>
     </header>

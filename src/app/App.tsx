@@ -1,5 +1,4 @@
 import { useDeferredValue, useEffect, useState } from 'react'
-import { AccountPanel } from '../components/AccountPanel'
 import { ClipboardList } from '../components/ClipboardList'
 import { Header } from '../components/Header'
 import { NotesWorkspace } from '../components/NotesWorkspace'
@@ -83,95 +82,67 @@ export function App() {
       edgeSide={settings.edgeSide}
       isOpen={sidebar.isOpen}
       isPinned={settings.pinOpen}
+      sidebarWidth={settings.sidebarWidth}
       onPointerEnter={sidebar.scheduleOpen}
       onPointerLeave={sidebar.scheduleClose}
+      onWidthChange={(width) => updatePartialSettings({ sidebarWidth: width })}
     >
-      <div className="sidebar-surface">
-        <Header
-          activeMode={activeMode}
-          onModeChange={setActiveMode}
-          onOpenSettings={sidebar.openSettings}
-          onTogglePin={sidebar.togglePin}
-          isPinned={settings.pinOpen}
-          isPremiumUnlocked={false}
-        />
+      <Header
+        activeMode={activeMode}
+        onModeChange={setActiveMode}
+        onOpenSettings={sidebar.openSettings}
+        onTogglePin={sidebar.togglePin}
+        isPinned={settings.pinOpen}
+        isPremiumUnlocked={false}
+      />
 
-        <div className="content-stack">
-          {sidebar.settingsOpen ? (
-            <div className="content-stack content-stack--settings">
-              <AccountPanel
-                user={auth.user}
-                authReady={auth.isReady}
-                authAvailable={auth.isAvailable}
-                authStatus={auth.status}
-                syncStatus={sync.status}
-                syncMessage={sync.message}
-                onSignIn={() => void auth.signIn()}
-                onSignOut={() => void auth.signOut()}
-              />
-              <SettingsPanel
-                settings={settings}
-                onChange={updateSettings}
-                onClose={sidebar.closeSettings}
-              />
-            </div>
-          ) : activeMode === 'notes' ? (
-            <div className="content-stack content-stack--with-account">
-              <AccountPanel
-                user={auth.user}
-                authReady={auth.isReady}
-                authAvailable={auth.isAvailable}
-                authStatus={auth.status}
-                syncStatus={sync.status}
-                syncMessage={sync.message}
-                onSignIn={() => void auth.signIn()}
-                onSignOut={() => void auth.signOut()}
-              />
-              <NotesWorkspace
-                notes={notes}
-                isReady={notesReady}
-                onCreate={createNote}
-                onDelete={(id) => {
-                  updateNotes((currentNotes) => currentNotes.filter((note) => note.id !== id))
-                }}
-                onUpdate={(id, patch) => {
-                  updateNotes((currentNotes) =>
-                    currentNotes.map((note) =>
-                      note.id === id
-                        ? { ...note, ...patch, updatedAt: Date.now() }
-                        : note,
-                    ),
-                  )
-                }}
-              />
-            </div>
-          ) : activeMode === 'clipboard' ? (
-            <div className="content-stack content-stack--with-account">
-              <AccountPanel
-                user={auth.user}
-                authReady={auth.isReady}
-                authAvailable={auth.isAvailable}
-                authStatus={auth.status}
-                syncStatus={sync.status}
-                syncMessage={sync.message}
-                onSignIn={() => void auth.signIn()}
-                onSignOut={() => void auth.signOut()}
-              />
-              <ClipboardList
-                items={filteredItems}
-                allItemsCount={items.length}
-                isReady={settingsReady && historyReady}
-                query={searchQuery}
-                onQueryChange={setSearchQuery}
-                onCopy={copyItem}
-                onDelete={deleteItem}
-                onClearAll={clearAll}
-              />
-            </div>
-          ) : (
-            <PremiumPanelsView />
-          )}
-        </div>
+      <div className="content-stack">
+        {sidebar.settingsOpen ? (
+          <SettingsPanel
+            settings={settings}
+            onChange={updateSettings}
+            onClose={sidebar.closeSettings}
+            user={auth.user}
+            authReady={auth.isReady}
+            authAvailable={auth.isAvailable}
+            authStatus={auth.status}
+            syncStatus={sync.status}
+            syncMessage={sync.message}
+            onSignIn={() => void auth.signIn()}
+            onSignOut={() => void auth.signOut()}
+          />
+        ) : activeMode === 'notes' ? (
+          <NotesWorkspace
+            notes={notes}
+            isReady={notesReady}
+            onCreate={createNote}
+            onDelete={(id) => {
+              updateNotes((currentNotes) => currentNotes.filter((note) => note.id !== id))
+            }}
+            onUpdate={(id, patch) => {
+              updateNotes((currentNotes) =>
+                currentNotes.map((note) =>
+                  note.id === id
+                    ? { ...note, ...patch, updatedAt: Date.now() }
+                    : note,
+                ),
+              )
+            }}
+          />
+        ) : activeMode === 'clipboard' ? (
+          <ClipboardList
+            items={filteredItems}
+            allItemsCount={items.length}
+            isReady={settingsReady && historyReady}
+            query={searchQuery}
+            onQueryChange={setSearchQuery}
+            onCopy={copyItem}
+            onDelete={deleteItem}
+            onClearAll={clearAll}
+          />
+        ) : (
+          <PremiumPanelsView />
+        )}
       </div>
     </Shell>
   )

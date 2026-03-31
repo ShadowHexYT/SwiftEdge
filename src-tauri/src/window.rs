@@ -1,8 +1,8 @@
 use crate::models::{EdgeSide, SidebarWindowPayload};
 use tauri::{LogicalPosition, LogicalSize, Position, Size, WebviewWindow};
 
-const HANDLE_WIDTH: f64 = 14.0;
-const VERTICAL_MARGIN: f64 = 18.0;
+const HANDLE_WIDTH: f64 = 8.0;
+const VERTICAL_MARGIN: f64 = 12.0;
 
 pub fn default_sidebar_window_state() -> SidebarWindowPayload {
   SidebarWindowPayload {
@@ -25,7 +25,7 @@ pub fn apply_sidebar_window(
   let monitor_size = monitor.size().to_logical::<f64>(scale_factor);
   let monitor_position = monitor.position().to_logical::<f64>(scale_factor);
   let width = if payload.is_open {
-    payload.sidebar_width.clamp(320.0, 520.0)
+    payload.sidebar_width.clamp(280.0, 640.0)
   } else {
     HANDLE_WIDTH
   };

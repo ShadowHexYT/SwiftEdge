@@ -1,5 +1,6 @@
 import { useDeferredValue, useEffect, useState } from 'react'
 import type { NoteItem } from '../features/notes/types'
+import { IconPlus, IconSearch, IconTrash } from './Icons'
 
 type NotesWorkspaceProps = {
   notes: NoteItem[]
@@ -35,7 +36,7 @@ export function NotesWorkspace({
       return
     }
 
-    if (!selectedId || !notes.some((note) => note.id === selectedId)) {
+    if (!selectedId || !notes.some((n) => n.id === selectedId)) {
       setSelectedId(notes[0].id)
     }
   }, [notes, selectedId])
@@ -43,41 +44,47 @@ export function NotesWorkspace({
   const query = deferredQuery.trim().toLowerCase()
   const filteredNotes = !query
     ? notes
-    : notes.filter((note) => {
-        const haystack = `${note.title}\n${note.body}`.toLowerCase()
-        return haystack.includes(query)
-      })
+    : notes.filter((note) =>
+        `${note.title}\n${note.body}`.toLowerCase().includes(query),
+      )
 
   const selectedNote =
-    filteredNotes.find((note) => note.id === selectedId) ??
-    notes.find((note) => note.id === selectedId) ??
+    filteredNotes.find((n) => n.id === selectedId) ??
+    notes.find((n) => n.id === selectedId) ??
     null
 
   return (
-    <section className="section-shell notes-shell">
-      <div className="toolbar-row">
-        <label className="search-field">
-          <span className="search-field__label">Find note</span>
+    <section className="section-shell">
+      <div className="search-bar">
+        <div className="search-input-wrap">
+          <IconSearch size={14} />
           <input
             type="search"
             value={searchValue}
-            onChange={(event) => setSearchValue(event.target.value)}
-            placeholder="Search titles and note text"
+            onChange={(e) => setSearchValue(e.target.value)}
+            placeholder="Find note..."
           />
-        </label>
-        <button type="button" className="ghost-button" onClick={onCreate}>
-          New note
+        </div>
+        <button
+          type="button"
+          className="btn btn--filled btn--sm"
+          onClick={onCreate}
+        >
+          <IconPlus size={14} />
+          New
         </button>
       </div>
 
       <div className="notes-layout">
         <aside className="notes-list" aria-busy={!isReady}>
-          {!isReady ? <div className="empty-state">Loading notes…</div> : null}
+          {!isReady ? (
+            <div className="empty-state">Loading…</div>
+          ) : null}
           {isReady && filteredNotes.length === 0 ? (
             <div className="empty-state">
-              {notes.length === 0
-                ? 'Create your first note to start building a personal workspace.'
-                : 'No notes match that search.'}
+              <span>
+                {notes.length === 0 ? 'No notes yet' : 'No matches'}
+              </span>
             </div>
           ) : null}
 
@@ -85,53 +92,62 @@ export function NotesWorkspace({
             <button
               key={note.id}
               type="button"
-              className="note-list-card"
+              className="note-card"
               data-active={note.id === selectedNote?.id}
               onClick={() => setSelectedId(note.id)}
             >
-              <div className="note-list-card__title">{note.title || 'Untitled note'}</div>
-              <div className="note-list-card__excerpt">{note.body || 'Start writing…'}</div>
-              <div className="note-list-card__meta">{formatUpdatedAt(note.updatedAt)}</div>
+              <div className="note-card__title">
+                {note.title || 'Untitled note'}
+              </div>
+              <div className="note-card__excerpt">
+                {note.body || 'Start writing…'}
+              </div>
+              <div className="note-card__meta">
+                {formatUpdatedAt(note.updatedAt)}
+              </div>
             </button>
           ))}
         </aside>
 
-        <div className="note-editor-shell">
+        <div className="note-editor">
           {selectedNote ? (
             <>
-              <div className="note-editor-toolbar">
-                <div>
-                  <div className="section-heading__eyebrow">Personal note</div>
-                  <div className="note-editor-toolbar__stamp">
-                    Updated {formatUpdatedAt(selectedNote.updatedAt)}
-                  </div>
-                </div>
+              <div className="note-editor__toolbar">
+                <span className="note-editor__meta">
+                  {formatUpdatedAt(selectedNote.updatedAt)}
+                </span>
                 <button
                   type="button"
-                  className="ghost-button"
+                  className="icon-btn"
                   onClick={() => onDelete(selectedNote.id)}
+                  title="Delete note"
                 >
-                  Delete
+                  <IconTrash size={15} />
                 </button>
               </div>
-
               <input
                 type="text"
-                className="note-title-input"
+                className="note-editor__title"
                 value={selectedNote.title}
-                onChange={(event) => onUpdate(selectedNote.id, { title: event.target.value })}
+                onChange={(e) =>
+                  onUpdate(selectedNote.id, { title: e.target.value })
+                }
                 placeholder="Untitled note"
               />
-
               <textarea
-                className="note-body-input"
+                className="note-editor__body"
                 value={selectedNote.body}
-                onChange={(event) => onUpdate(selectedNote.id, { body: event.target.value })}
-                placeholder="Write thoughts, tasks, or snippets you want available from every machine."
+                onChange={(e) =>
+                  onUpdate(selectedNote.id, { body: e.target.value })
+                }
+                placeholder="Start writing…"
               />
             </>
           ) : (
-            <div className="empty-state">Select a note or create a fresh one to start writing.</div>
+            <div className="empty-state" style={{ flex: 1 }}>
+              <div className="empty-state__title">No note selected</div>
+              <span>Select a note or create a new one.</span>
+            </div>
           )}
         </div>
       </div>

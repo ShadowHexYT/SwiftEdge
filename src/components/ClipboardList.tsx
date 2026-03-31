@@ -1,4 +1,5 @@
 import type { ClipboardItem } from '../features/clipboard/types'
+import { IconSearch, IconTrash } from './Icons'
 
 type ClipboardListProps = {
   items: ClipboardItem[]
@@ -32,32 +33,47 @@ export function ClipboardList({
 }: ClipboardListProps) {
   return (
     <section className="section-shell">
-      <div className="toolbar-row">
-        <label className="search-field">
-          <span className="search-field__label">Search</span>
+      <div className="search-bar">
+        <div className="search-input-wrap">
+          <IconSearch size={14} />
           <input
             type="search"
             value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search text snippets"
+            onChange={(e) => onQueryChange(e.target.value)}
+            placeholder="Search clipboard..."
           />
-        </label>
-        <button type="button" className="ghost-button" onClick={() => void onClearAll()}>
-          Clear all
-        </button>
+        </div>
+        {allItemsCount > 0 && (
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm btn--danger"
+            onClick={() => void onClearAll()}
+          >
+            Clear all
+          </button>
+        )}
       </div>
 
       <div className="status-line">
-        <span>{allItemsCount} saved items</span>
+        <span>
+          {allItemsCount} item{allItemsCount !== 1 ? 's' : ''}
+        </span>
         <span>Newest first</span>
       </div>
 
       <div className="clipboard-list" role="list" aria-busy={!isReady}>
-        {!isReady ? <div className="empty-state">Loading clipboard history…</div> : null}
+        {!isReady ? <div className="empty-state">Loading clipboard…</div> : null}
 
         {isReady && items.length === 0 ? (
           <div className="empty-state">
-            {query ? 'No text snippets match that search.' : 'Copy text or an image to start building history.'}
+            <div className="empty-state__title">
+              {query ? 'No matches' : 'Clipboard is empty'}
+            </div>
+            <span>
+              {query
+                ? 'No text snippets match your search.'
+                : 'Copy text or images to start building history.'}
+            </span>
           </div>
         ) : null}
 
@@ -65,39 +81,51 @@ export function ClipboardList({
           <button
             key={item.id}
             type="button"
-            className="clipboard-card"
-            data-kind={item.kind}
+            className="clip-card"
             role="listitem"
             onClick={() => void onCopy(item.id)}
           >
-            <div className="clipboard-card__meta">
-              <span className="clipboard-card__kind">{item.kind === 'text' ? 'Text' : 'Image'}</span>
-              <span className="clipboard-card__time">{formatTimestamp(item.createdAt)}</span>
+            <div className="clip-card__header">
+              <span className="clip-card__kind">
+                {item.kind === 'text' ? 'Text' : 'Image'}
+              </span>
+              <span className="clip-card__time">
+                {formatTimestamp(item.createdAt)}
+              </span>
             </div>
 
             {item.kind === 'image' && item.imageDataUrl ? (
-              <div className="clipboard-card__image-wrap">
-                <img src={item.imageDataUrl} alt="" className="clipboard-card__image" />
+              <div className="clip-card__image-wrap">
+                <img src={item.imageDataUrl} alt="" />
               </div>
             ) : null}
 
-            <div className="clipboard-card__preview">{item.preview}</div>
+            <div className="clip-card__preview">{item.preview}</div>
 
-            <div className="clipboard-card__footer">
-              <span>Click to copy back</span>
-              <span className="clipboard-card__actions">
-                <span className="clipboard-card__action">Reuse</span>
+            <div className="clip-card__footer">
+              <span className="clip-card__hint">Click to copy</span>
+              <div className="clip-card__actions">
                 <span
-                  className="clipboard-card__action clipboard-card__action--danger"
-                  onClick={(event) => {
-                    event.preventDefault()
-                    event.stopPropagation()
+                  className="icon-btn icon-btn--inline"
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
                     void onDelete(item.id)
                   }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      void onDelete(item.id)
+                    }
+                  }}
+                  title="Delete"
                 >
-                  Delete
+                  <IconTrash size={13} />
                 </span>
-              </span>
+              </div>
             </div>
           </button>
         ))}
