@@ -1,13 +1,15 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { syncSidebarWindow } from '../services/desktop'
 import {
+  registerSidebarFocusListener,
   registerSidebarShortcut,
   syncLaunchOnStartup,
 } from '../services/desktopControls'
 import type { AppSettings } from '../types/settings'
 
-const PANEL_CLOSE_DELAY_MS = 120
-const PANEL_HIDE_DURATION_MS = 110
+const PANEL_CLOSE_DELAY_MS = 24
+const PANEL_COLLAPSE_DELAY_MS = 148
+const MAX_EFFECTIVE_HOVER_DELAY_MS = 64
 
 export function useSidebarController(
   settings: AppSettings,
@@ -21,6 +23,8 @@ export function useSidebarController(
   const closeTimer = useRef<number | null>(null)
   const collapseTimer = useRef<number | null>(null)
   const syncedWindowState = useRef('')
+  const isPointerInside = useRef(false)
+  const isWindowFocused = useRef(false)
 
   const clearTimers = useEffectEvent(() => {
     if (openTimer.current !== null) {
@@ -44,9 +48,7 @@ export function useSidebarController(
 
   const showPanel = useEffectEvent(() => {
     expandWindow()
-    window.requestAnimationFrame(() => {
-      setIsOpen(true)
-    })
+    setIsOpen(true)
   })
 
   const collapseSidebar = useEffectEvent(() => {
@@ -60,7 +62,7 @@ export function useSidebarController(
     setIsOpen(false)
     collapseTimer.current = window.setTimeout(() => {
       setIsExpanded(false)
-    }, PANEL_HIDE_DURATION_MS)
+    }, PANEL_COLLAPSE_DELAY_MS)
   })
 
   const scheduleOpen = useEffectEvent(() => {
@@ -69,10 +71,21 @@ export function useSidebarController(
       return
     }
 
+    if (isExpanded || isOpen) {
+      if (collapseTimer.current !== null) {
+        window.clearTimeout(collapseTimer.current)
+        collapseTimer.current = null
+      }
+      if (isExpanded && !isOpen) {
+        setIsOpen(true)
+      }
+      return
+    }
+
     clearTimers()
     openTimer.current = window.setTimeout(() => {
       showPanel()
-    }, Math.max(0, settings.hoverDelayMs))
+    }, Math.min(Math.max(0, settings.hoverDelayMs), MAX_EFFECTIVE_HOVER_DELAY_MS))
   })
 
   const scheduleClose = useEffectEvent(() => {
@@ -83,6 +96,9 @@ export function useSidebarController(
 
     clearTimers()
     closeTimer.current = window.setTimeout(() => {
+      if (isPointerInside.current || isWindowFocused.current) {
+        return
+      }
       collapseSidebar()
     }, PANEL_CLOSE_DELAY_MS)
   })
@@ -158,6 +174,33 @@ export function useSidebarController(
     }
   }, [collapseSidebar, isExpanded, isReady, settings.pinOpen, showPanel])
 
+  useEffect(() => {
+    if (!isReady) {
+      return
+    }
+
+    let cleanup: () => void = () => {}
+
+    void registerSidebarFocusListener((focused) => {
+      isWindowFocused.current = focused
+
+      if (focused) {
+        clearTimers()
+        return
+      }
+
+      if (!settings.pinOpen && !isPointerInside.current) {
+        collapseSidebar()
+      }
+    }).then((nextCleanup) => {
+      cleanup = nextCleanup
+    })
+
+    return () => {
+      cleanup()
+    }
+  }, [clearTimers, collapseSidebar, isReady, settings.pinOpen])
+
   return {
     isExpanded: settings.pinOpen || isExpanded,
     isOpen: settings.pinOpen || isOpen,
@@ -168,7 +211,13 @@ export function useSidebarController(
     },
     closeSettings: () => setSettingsOpen(false),
     togglePin: () => updatePartialSettings({ pinOpen: !settings.pinOpen }),
-    scheduleOpen,
-    scheduleClose,
+    scheduleOpen: () => {
+      isPointerInside.current = true
+      scheduleOpen()
+    },
+    scheduleClose: () => {
+      isPointerInside.current = false
+      scheduleClose()
+    },
   }
 }

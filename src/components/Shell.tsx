@@ -6,6 +6,7 @@ type ShellProps = PropsWithChildren<{
   isOpen: boolean
   isExpanded: boolean
   isPinned: boolean
+  isLoading: boolean
   sidebarWidth: number
   onPointerEnter: () => void
   onPointerLeave: () => void
@@ -17,6 +18,7 @@ export function Shell({
   isOpen,
   isExpanded,
   isPinned,
+  isLoading,
   sidebarWidth,
   onPointerEnter,
   onPointerLeave,
@@ -86,18 +88,33 @@ export function Shell({
       data-open={isOpen}
       data-expanded={isExpanded}
       data-pinned={isPinned}
-      onPointerEnter={onPointerEnter}
-      onPointerLeave={onPointerLeave}
+      data-loading={isLoading}
       style={{ ['--sidebar-width' as string]: `${sidebarWidth}px` }}
     >
+      <div
+        className="edge-hit-area"
+        onPointerEnter={onPointerEnter}
+        aria-hidden="true"
+      />
       <div className="edge-handle" aria-hidden="true">
         <div className="edge-handle__bar" />
       </div>
-      <div className="panel-frame">
+      <div
+        className="panel-frame"
+        onPointerEnter={onPointerEnter}
+        onPointerLeave={onPointerLeave}
+      >
         <div className="resize-handle" onPointerDown={startResize} aria-hidden="true">
           <div className="resize-handle__grip" />
         </div>
-        <div className="sidebar-surface">{children}</div>
+        <div className="sidebar-surface">
+          <div className="sidebar-content-shell">{children}</div>
+          {isLoading ? (
+            <div className="sidebar-loading" role="status" aria-live="polite">
+              <div className="sidebar-loading__spinner" aria-hidden="true" />
+            </div>
+          ) : null}
+        </div>
       </div>
     </main>
   )

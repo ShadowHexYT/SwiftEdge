@@ -41,6 +41,16 @@ export function App() {
   const sidebar = useSidebarController(settings, updatePartialSettings, settingsReady)
 
   const query = deferredQuery.trim().toLowerCase()
+  const isLoading =
+    !settingsReady ||
+    (sidebar.settingsOpen
+      ? !settingsReady
+      : activeMode === 'notes'
+        ? !notesReady
+        : activeMode === 'clipboard'
+          ? !historyReady
+          : false)
+
   const filteredItems = !query
     ? items
     : items.filter(
@@ -66,6 +76,7 @@ export function App() {
       isOpen={sidebar.isOpen}
       isExpanded={sidebar.isExpanded}
       isPinned={settings.pinOpen}
+      isLoading={isLoading}
       sidebarWidth={settings.sidebarWidth}
       onPointerEnter={sidebar.scheduleOpen}
       onPointerLeave={sidebar.scheduleClose}
