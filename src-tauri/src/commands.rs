@@ -3,7 +3,7 @@ use crate::clipboard::{
   restore_item_to_clipboard, update_history_limit,
 };
 use crate::models::{ClipboardItem, SidebarWindowPayload};
-use crate::state::ClipboardState;
+use crate::state::{ClipboardState, SidebarRuntimeSnapshot, SidebarRuntimeState};
 use crate::window::apply_sidebar_window;
 use tauri::{AppHandle, State, WebviewWindow};
 
@@ -60,6 +60,12 @@ pub fn replace_clipboard_history(
 pub fn sync_sidebar_window(
   window: WebviewWindow,
   payload: SidebarWindowPayload,
+  runtime_state: State<'_, SidebarRuntimeState>,
 ) -> Result<(), String> {
+  runtime_state.update(SidebarRuntimeSnapshot {
+    edge_side: payload.edge_side.clone(),
+    hover_delay_ms: payload.hover_delay_ms,
+    is_open: payload.is_open,
+  })?;
   apply_sidebar_window(&window, &payload)
 }

@@ -19,12 +19,17 @@
         "height": 860,
         "resizable": false,
         "fullscreen": false,
+        "focus": false,
+        "focusable": false,
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
+        "visibleOnAllWorkspaces": true,
         "skipTaskbar": true,
         "visible": true,
-        "shadow": true
+        "shadow": true,
+        "acceptFirstMouse": true,
+        "backgroundThrottling": "disabled"
       }
     ],
     "security": {

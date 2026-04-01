@@ -3,6 +3,43 @@ import { isTauriRuntime } from './runtime'
 type ShortcutCleanup = () => void
 type FocusCleanup = () => void
 
+export async function configureNativeMacShell() {
+  if (!isTauriRuntime()) {
+    return
+  }
+
+  const windowModule = await import('@tauri-apps/api/window')
+  const currentWindow = windowModule.getCurrentWindow()
+
+  await Promise.allSettled([
+    currentWindow.setAlwaysOnTop(true),
+    currentWindow.setVisibleOnAllWorkspaces(true),
+  ])
+}
+
+export async function syncNativePanelInteractivity(interactive: boolean) {
+  if (!isTauriRuntime()) {
+    return
+  }
+
+  const windowModule = await import('@tauri-apps/api/window')
+  const currentWindow = windowModule.getCurrentWindow()
+
+  await Promise.allSettled([
+    currentWindow.setIgnoreCursorEvents(!interactive),
+    currentWindow.setFocusable(interactive),
+  ])
+}
+
+export async function focusSidebarWindow() {
+  if (!isTauriRuntime()) {
+    return
+  }
+
+  const windowModule = await import('@tauri-apps/api/window')
+  await windowModule.getCurrentWindow().setFocus()
+}
+
 export async function syncLaunchOnStartup(enabled: boolean) {
   if (!isTauriRuntime()) {
     return

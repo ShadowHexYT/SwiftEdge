@@ -13,6 +13,7 @@ export type AppSettings = {
 }
 
 export type SidebarWindowState = Pick<AppSettings, 'edgeSide' | 'sidebarWidth'> & {
+  hoverDelayMs: number
   isOpen: boolean
 }
 

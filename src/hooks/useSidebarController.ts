@@ -1,27 +1,35 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
-import { syncSidebarWindow } from '../services/desktop'
+import { subscribeSidebarOpenRequests, syncSidebarWindow } from '../services/desktop'
 import {
+  configureNativeMacShell,
+  focusSidebarWindow,
   registerSidebarFocusListener,
   registerSidebarShortcut,
+  syncNativePanelInteractivity,
   syncLaunchOnStartup,
 } from '../services/desktopControls'
 import type { AppSettings } from '../types/settings'
 
-const PANEL_CLOSE_DELAY_MS = 24
-const PANEL_COLLAPSE_DELAY_MS = 148
-const MAX_EFFECTIVE_HOVER_DELAY_MS = 64
+type PanelState = 'collapsed' | 'opening' | 'expanded' | 'closing'
+
+const PANEL_CLOSE_DELAY_MS = 110
+const PANEL_MOTION_DURATION_MS = 160
+const MAX_EFFECTIVE_HOVER_DELAY_MS = 90
+const NATIVE_EDGE_IDLE_CLOSE_MS = 420
 
 export function useSidebarController(
   settings: AppSettings,
   updatePartialSettings: (partial: Partial<AppSettings>) => void,
   isReady: boolean,
 ) {
-  const [isExpanded, setIsExpanded] = useState(settings.pinOpen)
-  const [isOpen, setIsOpen] = useState(settings.pinOpen)
+  const [panelState, setPanelState] = useState<PanelState>(
+    settings.pinOpen ? 'expanded' : 'collapsed',
+  )
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const shellRef = useRef<HTMLElement | null>(null)
   const openTimer = useRef<number | null>(null)
   const closeTimer = useRef<number | null>(null)
-  const collapseTimer = useRef<number | null>(null)
+  const motionTimer = useRef<number | null>(null)
   const syncedWindowState = useRef('')
   const isPointerInside = useRef(false)
   const isWindowFocused = useRef(false)
@@ -35,62 +43,87 @@ export function useSidebarController(
       window.clearTimeout(closeTimer.current)
       closeTimer.current = null
     }
-    if (collapseTimer.current !== null) {
-      window.clearTimeout(collapseTimer.current)
-      collapseTimer.current = null
+    if (motionTimer.current !== null) {
+      window.clearTimeout(motionTimer.current)
+      motionTimer.current = null
     }
   })
 
-  const expandWindow = useEffectEvent(() => {
-    clearTimers()
-    setIsExpanded(true)
+  const finishExpanded = useEffectEvent(() => {
+    motionTimer.current = window.setTimeout(() => {
+      setPanelState('expanded')
+      motionTimer.current = null
+    }, PANEL_MOTION_DURATION_MS)
   })
 
-  const showPanel = useEffectEvent(() => {
-    expandWindow()
-    setIsOpen(true)
+  const requestOpen = useEffectEvent(() => {
+    clearTimers()
+
+    setPanelState((current) => {
+      if (current === 'expanded' || current === 'opening') {
+        return current
+      }
+      return 'opening'
+    })
+    finishExpanded()
+  })
+
+  const requestOpenFromNativeEdge = useEffectEvent(() => {
+    if (settings.pinOpen) {
+      requestOpen()
+      return
+    }
+
+    isPointerInside.current = false
+    requestOpen()
+
+    closeTimer.current = window.setTimeout(() => {
+      if (!isPointerInside.current && !isWindowFocused.current) {
+        collapseSidebar()
+      }
+    }, NATIVE_EDGE_IDLE_CLOSE_MS)
   })
 
   const collapseSidebar = useEffectEvent(() => {
     if (settings.pinOpen) {
-      showPanel()
+      requestOpen()
       return
     }
 
     clearTimers()
     setSettingsOpen(false)
-    setIsOpen(false)
-    collapseTimer.current = window.setTimeout(() => {
-      setIsExpanded(false)
-    }, PANEL_COLLAPSE_DELAY_MS)
+    setPanelState((current) => {
+      if (current === 'collapsed' || current === 'closing') {
+        return current
+      }
+      return 'closing'
+    })
+    motionTimer.current = window.setTimeout(() => {
+      setPanelState('collapsed')
+      motionTimer.current = null
+    }, PANEL_MOTION_DURATION_MS)
   })
 
   const scheduleOpen = useEffectEvent(() => {
     if (settings.pinOpen) {
-      showPanel()
+      requestOpen()
       return
     }
 
-    if (isExpanded || isOpen) {
-      if (collapseTimer.current !== null) {
-        window.clearTimeout(collapseTimer.current)
-        collapseTimer.current = null
-      }
-      if (isExpanded && !isOpen) {
-        setIsOpen(true)
-      }
+    if (panelState === 'expanded' || panelState === 'opening') {
+      clearTimers()
       return
     }
 
     clearTimers()
     openTimer.current = window.setTimeout(() => {
-      showPanel()
+      requestOpen()
     }, Math.min(Math.max(0, settings.hoverDelayMs), MAX_EFFECTIVE_HOVER_DELAY_MS))
   })
 
   const scheduleClose = useEffectEvent(() => {
     if (settings.pinOpen) {
-      showPanel()
+      requestOpen()
       return
     }
 
@@ -103,6 +136,8 @@ export function useSidebarController(
     }, PANEL_CLOSE_DELAY_MS)
   })
 
+  const isVisible = panelState !== 'collapsed'
+
   useEffect(() => {
     if (!isReady) {
       return
@@ -111,7 +146,8 @@ export function useSidebarController(
     const nextWindowState = JSON.stringify({
       edgeSide: settings.edgeSide,
       sidebarWidth: settings.sidebarWidth,
-      isOpen: settings.pinOpen || isExpanded,
+      hoverDelayMs: settings.hoverDelayMs,
+      isOpen: settings.pinOpen || isVisible,
     })
 
     if (syncedWindowState.current === nextWindowState) {
@@ -122,9 +158,17 @@ export function useSidebarController(
     void syncSidebarWindow(JSON.parse(nextWindowState) as {
       edgeSide: AppSettings['edgeSide']
       sidebarWidth: number
+      hoverDelayMs: number
       isOpen: boolean
     })
-  }, [isExpanded, isReady, settings.edgeSide, settings.pinOpen, settings.sidebarWidth])
+  }, [
+    isReady,
+    isVisible,
+    settings.edgeSide,
+    settings.hoverDelayMs,
+    settings.pinOpen,
+    settings.sidebarWidth,
+  ])
 
   useEffect(() => {
     if (!isReady) {
@@ -132,14 +176,30 @@ export function useSidebarController(
     }
 
     if (settings.pinOpen) {
-      setIsExpanded(true)
-      setIsOpen(true)
+      clearTimers()
+      setPanelState('expanded')
       return
     }
 
-    setIsOpen(false)
-    setIsExpanded(false)
-  }, [isReady, settings.pinOpen])
+    setPanelState('collapsed')
+  }, [clearTimers, isReady, settings.pinOpen])
+
+  useEffect(() => {
+    if (!isReady) {
+      return
+    }
+
+    void configureNativeMacShell()
+  }, [isReady])
+
+  useEffect(() => {
+    if (!isReady) {
+      return
+    }
+
+    const interactive = settings.pinOpen || panelState !== 'collapsed'
+    void syncNativePanelInteractivity(interactive)
+  }, [isReady, panelState, settings.pinOpen])
 
   useEffect(() => {
     if (!isReady) {
@@ -156,12 +216,13 @@ export function useSidebarController(
       cleanup = await registerSidebarShortcut(() => {
         setSettingsOpen(false)
 
-        if (settings.pinOpen || isExpanded) {
+        if (settings.pinOpen || panelState !== 'collapsed') {
           collapseSidebar()
           return
         }
 
-        showPanel()
+        requestOpen()
+        void focusSidebarWindow()
       })
     }
 
@@ -172,7 +233,7 @@ export function useSidebarController(
     return () => {
       cleanup()
     }
-  }, [collapseSidebar, isExpanded, isReady, settings.pinOpen, showPanel])
+  }, [collapseSidebar, isReady, panelState, requestOpen, settings.pinOpen])
 
   useEffect(() => {
     if (!isReady) {
@@ -201,16 +262,72 @@ export function useSidebarController(
     }
   }, [clearTimers, collapseSidebar, isReady, settings.pinOpen])
 
+  useEffect(() => {
+    if (!isReady) {
+      return
+    }
+
+    let cleanup: () => void = () => {}
+
+    void subscribeSidebarOpenRequests(() => {
+      requestOpenFromNativeEdge()
+    }).then((nextCleanup) => {
+      cleanup = nextCleanup
+    })
+
+    return () => {
+      cleanup()
+    }
+  }, [isReady, requestOpenFromNativeEdge])
+
+  useEffect(() => {
+    if (!isReady) {
+      return
+    }
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (settings.pinOpen || !shellRef.current) {
+        return
+      }
+
+      if (!shellRef.current.contains(event.target as Node)) {
+        isPointerInside.current = false
+        collapseSidebar()
+      }
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !settings.pinOpen) {
+        collapseSidebar()
+      }
+    }
+
+    document.addEventListener('pointerdown', onPointerDown, true)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [collapseSidebar, isReady, settings.pinOpen])
+
   return {
-    isExpanded: settings.pinOpen || isExpanded,
-    isOpen: settings.pinOpen || isOpen,
+    shellRef,
+    panelState,
+    isExpanded: settings.pinOpen || isVisible,
+    isOpen: settings.pinOpen || panelState === 'expanded' || panelState === 'opening',
     settingsOpen,
     openSettings: () => {
       setSettingsOpen(true)
-      showPanel()
+      requestOpen()
+      void focusSidebarWindow()
     },
     closeSettings: () => setSettingsOpen(false),
     togglePin: () => updatePartialSettings({ pinOpen: !settings.pinOpen }),
+    openImmediately: () => {
+      isPointerInside.current = true
+      requestOpen()
+      void focusSidebarWindow()
+    },
     scheduleOpen: () => {
       isPointerInside.current = true
       scheduleOpen()

@@ -240,6 +240,21 @@ export async function syncSidebarWindow(payload: SidebarWindowState) {
   }
 }
 
+export async function subscribeSidebarOpenRequests(onOpen: () => void) {
+  if (!isTauriRuntime()) {
+    return () => {}
+  }
+
+  if (!eventModulePromise) {
+    eventModulePromise = import('@tauri-apps/api/event')
+  }
+
+  const { listen } = await eventModulePromise
+  return listen('swiftedge://edge-activate', () => {
+    onOpen()
+  })
+}
+
 export async function replaceClipboardHistory(items: ClipboardItem[]) {
   if (isTauriRuntime()) {
     await tauriInvoke<void>('replace_clipboard_history', { items })

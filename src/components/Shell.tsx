@@ -1,8 +1,16 @@
-import { useCallback, useEffect, useRef, type PropsWithChildren } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  type PropsWithChildren,
+  type RefObject,
+} from 'react'
 import type { EdgeSide } from '../types/settings'
 
 type ShellProps = PropsWithChildren<{
+  shellRef: RefObject<HTMLElement | null>
   edgeSide: EdgeSide
+  panelState: 'collapsed' | 'opening' | 'expanded' | 'closing'
   isOpen: boolean
   isExpanded: boolean
   isPinned: boolean
@@ -10,11 +18,14 @@ type ShellProps = PropsWithChildren<{
   sidebarWidth: number
   onPointerEnter: () => void
   onPointerLeave: () => void
+  onHandlePress: () => void
   onWidthChange: (width: number) => void
 }>
 
 export function Shell({
+  shellRef,
   edgeSide,
+  panelState,
   isOpen,
   isExpanded,
   isPinned,
@@ -22,6 +33,7 @@ export function Shell({
   sidebarWidth,
   onPointerEnter,
   onPointerLeave,
+  onHandlePress,
   onWidthChange,
   children,
 }: ShellProps) {
@@ -83,8 +95,10 @@ export function Shell({
 
   return (
     <main
+      ref={shellRef}
       className="app-shell"
       data-edge={edgeSide}
+      data-state={panelState}
       data-open={isOpen}
       data-expanded={isExpanded}
       data-pinned={isPinned}
@@ -94,6 +108,7 @@ export function Shell({
       <div
         className="edge-hit-area"
         onPointerEnter={onPointerEnter}
+        onPointerDown={onHandlePress}
         aria-hidden="true"
       />
       <div className="edge-handle" aria-hidden="true">

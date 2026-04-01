@@ -8,6 +8,7 @@ pub fn default_sidebar_window_state() -> SidebarWindowPayload {
   SidebarWindowPayload {
     edge_side: EdgeSide::Right,
     sidebar_width: 392.0,
+    hover_delay_ms: 120,
     is_open: false,
   }
 }

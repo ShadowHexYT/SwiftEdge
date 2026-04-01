@@ -34,6 +34,7 @@ pub enum EdgeSide {
 pub struct SidebarWindowPayload {
   pub edge_side: EdgeSide,
   pub sidebar_width: f64,
+  pub hover_delay_ms: u64,
   pub is_open: bool,
 }
 

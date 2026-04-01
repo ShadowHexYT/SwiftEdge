@@ -72,7 +72,9 @@ export function App() {
 
   return (
     <Shell
+      shellRef={sidebar.shellRef}
       edgeSide={settings.edgeSide}
+      panelState={sidebar.panelState}
       isOpen={sidebar.isOpen}
       isExpanded={sidebar.isExpanded}
       isPinned={settings.pinOpen}
@@ -80,6 +82,7 @@ export function App() {
       sidebarWidth={settings.sidebarWidth}
       onPointerEnter={sidebar.scheduleOpen}
       onPointerLeave={sidebar.scheduleClose}
+      onHandlePress={sidebar.openImmediately}
       onWidthChange={(width) => updatePartialSettings({ sidebarWidth: width })}
     >
       <Header
